@@ -1,5 +1,9 @@
 # Steam Revenue Classifier: Custom Multi-Layer Perceptron in C#
 
+Group Members: Christian V. Buzarang and Ericka Fatima Reign R. Ligaray
+Course, Year, and Section: BSCS - 3 F2
+Subject: CS345 - Intelligent Systems
+
 A Windows Forms application that trains a 3-layer MLP (input, hidden, output) with backpropagation to classify Steam games by revenue. It uses the provided `Backprop` classes (`INeuron`, `HNeuron`, `ONeuron`, `NeuralNet`) with no change to the algorithm. The only edit is that `LRPOUT` and `LRPIN` in `NeuralNet` are public fields instead of constants, so the learning rate can be tuned from the UI.
 
 ## Problem

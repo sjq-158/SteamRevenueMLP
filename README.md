@@ -88,4 +88,4 @@ Training log: `results/training_log.csv`.
 - `Form1.cs`, `Form1.Designer.cs`: UI, training loop, tuning, evaluation report
 - `SteamDataset.cs`: CSV parsing, preprocessing, train/validation/test split
 - `Metrics.cs`: evaluation metrics
-- `InputN.cs`, `HiddenN.cs`, `OuputN.cs`, `BackNeural.cs`: provided neural network library
+- `InputN.cs`, `HiddenN.cs`, `OuputN.cs`, `BackNeural.cs`: provided Neural Network library

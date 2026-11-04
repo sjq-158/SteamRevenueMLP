@@ -1,69 +1,45 @@
-# Steam Revenue Classifier: Custom Multi-Layer Perceptron in C#
+# Steam Revenue Classifier: Custom MLP in C#
 
 Group Members: Christian V. Buzarang and Ericka Fatima Reign R. Ligaray
-Course, Year, and Section: BSCS - 3 F2
-Subject: CS345 - Intelligent Systems
+BSCS - 3 F2 | CS345 - Intelligent Systems
 
-A Windows Forms application that trains a 3-layer MLP (input, hidden, output) with backpropagation to classify Steam games by revenue. It uses the provided `Backprop` classes (`INeuron`, `HNeuron`, `ONeuron`, `NeuralNet`) with no change to the algorithm. The only edit is that `LRPOUT` and `LRPIN` in `NeuralNet` are public fields instead of constants, so the learning rate can be tuned from the UI.
+A Windows Forms app that trains a 3-layer MLP (input, hidden, output) with backpropagation to predict
+whether a Steam game's 2024 revenue is at or above the median. It uses only the provided `Backprop`
+classes (`INeuron`, `HNeuron`, `ONeuron`, `NeuralNet`). The one edit is that `LRPOUT` and `LRPIN` are
+public fields so the UI can set the learning rate.
 
 ## Problem
 
-Binary classification: predict whether a game's revenue is at or above the median revenue of the training set (1 = high, 0 = low).
+Binary classification (1 = revenue at or above the training median, 0 = below). Raw revenue is extremely
+right-skewed (skew 22.9, max 838M vs median 109K), so regression on it is unstable. A median split is not.
 
-## Dataset
+## Data
 
-`Data/Steam_2024_bestRevenue_1500.csv` contains 1,500 Steam games released in 2024, ranked by revenue.
+`Data/Steam_2024_bestRevenue_1500.csv`: 1,500 Steam games from 2024.
 
-Used columns: `price`, `avgPlaytime`, `reviewScore`, `publisherClass`, and `revenue` (to build the target).
-
-Not used:
-- `copiesSold`: revenue is roughly copies sold times price, so using it would leak the answer.
-- `releaseDate`: every game is from 2024 and release month showed no consistent relationship with revenue.
-- `name`, `publishers`, `developers`, `steamId`: identifiers or free text.
-
-Exploratory observations on the full dataset (share of games at or above the median revenue):
-
-| Group | Share above median |
-|---|---|
-| Free games (85) | 65% |
-| Price 0.01 to 5 | 24% |
-| Price 10 to 15 | 45% |
-| Price above 30 | 78% |
-| Review score 0 (99 games) | 81% |
-| Lowest playtime fifth | 23% |
-| Highest playtime fifth | 76% |
-
-Median revenue by publisher class: AAA 928,862, AA 672,187, Indie 90,795.
-
-A review score of 0 means no score is available, and those games are mostly high earners, so the missing value carries information and is kept as a feature.
-
-## Preprocessing
-
-- Rows with unparseable or negative values are skipped.
-- Data is shuffled with a fixed seed and split 70% train, 15% validation, 15% test.
-- Min and max for scaling, the mean review score, and the revenue median are computed from the training rows only.
-- Features (7): price (min-max), isFree, log(1 + avgPlaytime) (min-max), reviewScore (min-max, mean-imputed when 0), noReview flag, isAAA, isAA. Indie is the reference class.
+- Features (7): price, isFree, log(avgPlaytime), reviewScore, noReview flag, isAAA, isAA. Numeric values are
+  min-max scaled to [0, 1]; scaling values, the mean review score and the median are taken from training rows only.
+- Dropped: `copiesSold` (revenue = copies x price, so it leaks the label), `releaseDate`, and identifier/text columns.
+- Split: 70% train / 15% validation / 15% test, shuffled with a fixed seed.
 
 ## Model
 
-- 7 inputs, a tunable hidden layer, 1 sigmoid output neuron.
-- Online (per-sample) gradient descent with backpropagation from the provided library. Samples are reshuffled every epoch.
-- The same learning rate is used for both layers.
-- Loss: mean squared error of the sigmoid output against the 0/1 label.
+7 inputs, tunable hidden layer, 1 sigmoid output. Per-sample gradient descent, reshuffled every epoch.
+Loss is MSE against the 0/1 label.
 
-## Evaluation
+## Tuning
 
-Reported on the held-out test set: accuracy, precision, recall, F1, confusion matrix, and the majority-class baseline accuracy. The loss curve (train and validation) is drawn in the app and logged to CSV.
+Grid on the validation set: hidden {4, 8, 16} x learning rate {0.01, 0.05, 0.1, 0.3} x epochs {100, 300, 1000},
+averaged over 3 runs. Results: `results/tuning_results.csv`.
 
-## Hyperparameter tuning
-
-Grid search on the validation set: hidden nodes {4, 8, 16}, learning rate {0.01, 0.05, 0.1, 0.3}, epochs {100, 300, 1000}. Each setting is averaged over 3 runs because initial weights are random. The best setting is chosen by validation accuracy, with validation MSE as the tie-breaker. Full table: `results/tuning_results.csv`.
-
-Chosen configuration: hidden = _, learning rate = _, epochs = _ (replace with your result and explain why).
+Chosen: hidden = 8, learning rate = 0.05, epochs = 300 (validation accuracy 75.4%, validation MSE 0.1815).
+The validation set is only 225 games, so differences of 1 to 2 points between the top settings are noise.
+We picked the smallest network and a moderate rate among the top group. Loss flattens by about epoch 100,
+and longer runs or higher rates did not improve validation accuracy.
 
 ## Results
 
-Replace with your numbers after running.
+Fill in from your own run.
 
 | Metric | Value |
 |---|---|
@@ -75,17 +51,9 @@ Replace with your numbers after running.
 
 Training log: `results/training_log.csv`.
 
-## How to run
+## Run
 
-1. Open `SteamRevenueMLP.sln` in Visual Studio.
-2. Make sure `Data/Steam_2024_bestRevenue_1500.csv` has Copy to Output Directory set to Copy if newer.
+1. Open `SteamRevenueMLP.slnx` in Visual Studio.
+2. Set `Data/Steam_2024_bestRevenue_1500.csv` to Copy if newer.
 3. Press F5. The CSV loads automatically.
-4. Click Tune Parameters (optional), then Train. Use Save CSV to export logs.
-
-## Project structure
-
-- `Program.cs`: entry point
-- `Form1.cs`, `Form1.Designer.cs`: UI, training loop, tuning, evaluation report
-- `SteamDataset.cs`: CSV parsing, preprocessing, train/validation/test split
-- `Metrics.cs`: evaluation metrics
-- `InputN.cs`, `HiddenN.cs`, `OuputN.cs`, `BackNeural.cs`: provided Neural Network library
+4. Optional: Tune Parameters. Then Train. Tick Show loss graph to see the loss curve. Save CSV exports the log.
